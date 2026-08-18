@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FilmHub MiniApp</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #151c28;
+            --accent-blue: #0088cc;
+            --accent-neon: #00d2ff;
+            --text-color: #ffffff;
+            --text-muted: #8a99ad;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Launch / Splash Screen --- */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #152238 0%, #0b0e14 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .poster-box {
+            width: 140px;
+            height: 140px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-neon));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+            margin-bottom: 25px;
+        }
+
+        .poster-box h1 {
+            font-size: 22px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .splash-title {
+            font-size: 16px;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+
+        .progress-container {
+            width: 70%;
+            height: 6px;
+            background: #1c2638;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-neon));
+            transition: width 0.2s ease;
+        }
+
+        .developer-tag {
+            position: absolute;
+            bottom: 20px;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        /* --- Main App Body --- */
+        #app {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* --- Navigation Bar --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            height: 65px;
+            background: var(--card-bg);
+            border-top: 1px solid #1e293b;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--accent-neon);
+        }
+
+        .nav-item svg {
+            width: 22px;
+            height: 22px;
+            margin-bottom: 3px;
+            fill: currentColor;
+        }
+
+        /* --- Profile Cards --- */
+        .profile-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #1e293b;
+        }
+
+        .profile-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-neon);
+        }
+
+        .profile-info h3 { font-size: 16px; margin-bottom: 4px; }
+        .profile-info p { font-size: 12px; color: var(--text-muted); }
+
+        /* --- Movie Card Grid --- */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .movie-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #1e293b;
+        }
+
+        .movie-poster {
+            width: 100%;
+            height: 180px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .movie-details {
+            padding: 10px;
+        }
+
+        .movie-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .movie-cat-tag {
+            font-size: 10px;
+            color: var(--accent-neon);
+            background: rgba(0, 210, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .btn-download {
+            width: 100%;
+            padding: 8px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-neon));
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="poster-box">
+            <h1>FilmHub</h1>
+        </div>
+        <div class="splash-title">فیلم هاب در حال لود است...</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="p-bar"></div>
+        </div>
+        <div class="developer-tag">ساخته شده توسط م.م.م</div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app">
+        <div class="content-area">
+            <!-- All Movies Tab -->
+            <div id="tab-movies" class="tab-content active">
+                <h2 style="margin-bottom: 15px; font-size: 18px;">همه فیلم‌ها</h2>
+                <div class="movie-grid" id="movies-list">
+                    <!-- Movie Card Example -->
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background-image: url('https://via.placeholder.com/150x200');"></div>
+                        <div class="movie-details">
+                            <div class="movie-title">Inception (2010)</div>
+                            <span class="movie-cat-tag">اکشن / علمی‌تخیلی</span>
+                            <button class="btn-download" onclick="requestMovie('MOV_1024')">دریافت فیلم</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Tab -->
+            <div id="tab-categories" class="tab-content">
+                <h2 style="margin-bottom: 15px; font-size: 18px;">دسته‌بندی‌ها</h2>
+                <div id="cat-list">
+                    <!-- Dynamic Categories -->
+                </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div id="tab-profile" class="tab-content">
+                <div class="profile-card">
+                    <img id="user-avatar" class="profile-avatar" src="https://via.placeholder.com/60" alt="Avatar">
+                    <div class="profile-info">
+                        <h3 id="user-name">نام کاربر</h3>
+                        <p id="user-username">@username</p>
+                        <p id="user-id">آیدی عددی: 00000000</p>
+                    </div>
+                </div>
+                <h3 style="margin-bottom: 10px; font-size: 15px;">فیلم‌های اخیر کلیک شده</h3>
+                <div id="recent-movies" class="movie-grid">
+                    <!-- Recent Movies Dynamic List -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('movies', this)">
+                <svg viewBox="0 0 24 24"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H9l2 4H8L6 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+                <span>همه فیلم‌ها</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('categories', this)">
+                <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+                <span>دسته‌بندی</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('profile', this)">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <span>پروفایل</span>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Loading Progress Simulation
+        let progress = 0;
+        const pBar = document.getElementById('p-bar');
+        const splash = document.getElementById('splash-screen');
+        const app = document.getElementById('app');
+
+        const interval = setInterval(() => {
+            progress += 15;
+            pBar.style.width = progress + '%';
+            if (progress >= 100) {
+                clearInterval(interval);
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    app.style.display = 'flex';
+                }, 500);
+            }
+        }, 150);
+
+        // Init User Data
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            const user = tg.initDataUnsafe.user;
+            document.getElementById('user-name').innerText = `${user.first_name || ''} ${user.last_name || ''}`;
+            document.getElementById('user-username').innerText = user.username ? `@${user.username}` : 'بدون آیدی';
+            document.getElementById('user-id').innerText = `آیدی عددی: ${user.id}`;
+            if (user.photo_url) {
+                document.getElementById('user-avatar').src = user.photo_url;
+            }
+        }
+
+        // Tab Switching Logic
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            element.classList.add('active');
+        }
+
+        // Request Movie via Bot Deep Link
+        function requestMovie(movieCode) {
+            // Send deep link query back to Bot 2 or Bot 1
+            tg.openTelegramLink(`https://t.me/YourUploaderBot?start=${movieCode}`);
+        }
+    </script>
+</body>
+</html>
